@@ -191,7 +191,7 @@ const walletTemplate = `{
   "addresses": [
     {
       "address": "%s",
-      "publicKey": "%s,
+      "publicKey": "%s",
       "cipher": {
         "cipherText": "%s"
       }
