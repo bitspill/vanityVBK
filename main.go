@@ -20,6 +20,7 @@ import (
 
 var tStart time.Time
 var done = make(chan struct{})
+var acc = make(chan uint64)
 
 func main() {
 	var search = ""
@@ -77,6 +78,12 @@ func main() {
 		close(done)
 	case <-done:
 	}
+
+	sum := uint64(0)
+	for i := 0; i < threads; i++ {
+		sum += <-acc
+	}
+	fmt.Printf("Made %d attempts\n", sum)
 }
 
 func testLoop(search string, thread int, caseSensitive bool) {
@@ -86,9 +93,10 @@ func testLoop(search string, thread int, caseSensitive bool) {
 
 	t := time.Now()
 loop:
-	for i := 1; ; i++ {
+	for i := uint64(1); ; i++ {
 		select {
 		case <-done:
+			acc <- i - 1
 			break loop
 		default:
 			keyPair, err := btcec.NewPrivateKey(btcec.S256())
@@ -107,7 +115,11 @@ loop:
 
 			if match {
 				dumpKey(keyPair)
-				close(done)
+				select {
+				case <-done:
+				default:
+					close(done)
+				}
 			}
 
 			if i%100000 == 0 {
