@@ -142,7 +142,7 @@ func dumpKey(key *btcec.PrivateKey) {
 	fmt.Printf("Pubkey:  %s\n", pubKey)
 	fmt.Printf("PrvKey:  %s\n", prvKey)
 
-	err := ioutil.WriteFile(addr+".dat", b, 0655)
+	err := ioutil.WriteFile(addr+".dat", b, 0600)
 	if err != nil {
 		log.Fatal("error writing wallet file", err)
 	} else {
