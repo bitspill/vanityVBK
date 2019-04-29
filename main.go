@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/btcsuite/btcutil/base58"
 )
 
 var tStart time.Time
@@ -171,13 +170,13 @@ func encodePublicKey(key *btcec.PublicKey) []byte {
 
 func addressFromKeyNoChecksum(key *btcec.PrivateKey) string {
 	hash := sha256.Sum256(encodePublicKey(key.PubKey()))
-	return "V" + base58.Encode(hash[:])[:24]
+	return "V" + EncodeBase58(hash[:])[:24]
 }
 
 func addressFromKeyChecksum(key *btcec.PrivateKey) string {
 	b58 := addressFromKeyNoChecksum(key)
 	checksumHash := sha256.Sum256([]byte(b58))
-	checksumB58 := base58.Encode(checksumHash[:])
+	checksumB58 := EncodeBase58(checksumHash[:])
 	return b58 + checksumB58[:5]
 }
 
@@ -210,3 +209,34 @@ const walletTemplate = `{
     }
   ]
 }`
+
+var alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+
+// EncodeBase58 translated from https://bitcoin.stackexchange.com/a/76485
+func EncodeBase58(b []byte) string {
+	digits := make([]byte, len(b)*137/100+1)
+	digitsLen := 1
+	for i := 0; i < len(b); i++ {
+		carry := uint64(b[i])
+		for j := 0; j < digitsLen; j++ {
+			carry += uint64(digits[j]) << 8
+			digits[j] = byte(carry % 58)
+			carry /= 58
+		}
+		for carry > 0 {
+			digits[digitsLen] = byte(carry % 58)
+			digitsLen++
+			carry /= 58
+		}
+	}
+	resultLen := 0
+	result := make([]byte, len(b)*137/100+1)
+	for resultLen < len(b) && b[resultLen] == 0 {
+		result[resultLen] = '1'
+		resultLen++
+	}
+	for i := 0; i < digitsLen; i++ {
+		result[resultLen+i] = alphabet[digits[digitsLen-1-i]]
+	}
+	return string(result[:digitsLen+resultLen])
+}
